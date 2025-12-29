@@ -1,0 +1,32 @@
+Vrushali Sangle
+Hochschulstr. 28,
+01069 Dresden, Germany
++49 15752461445
+sanglevrushali5@gmail.com
+Subject: Application for Data Science Position
+Dear KoRo Team,
+I am excited to apply for the Data Science position at KoRo. With a Master’s degree in Computational Modeling
+and Simulation from TU Dresden and hands-on experience across data analytics, machine learning, and SQL, I am
+eager to bring my skills to a purpose-driven and fast-growing company like KoRo.
+During my Master’s thesis at Infineon Technologies, I developed predictive maintenance models using LSTM,
+Temporal Convolutional Networks (TCNs), and Random Forests on time-series motor control data. This involved
+designing data pipelines, extracting features, tuning model parameters, and delivering insights for real-world
+engineering applications. In parallel, I worked as a Working Student - Data Scientist at Infineon, where I built
+classification models, handled time-series data, and automated ML workflows using Python and Scikit-learn.
+Earlier, as a Working Student - Data Analyst at Infineon, I focused on developing dashboards in Tableau, optimizing
+SQL-based queries, and improving data processing workflows for internal stakeholders. Additionally, at
+Fraunhofer IAIS, I contributed to NLP-focused projects—training small language models and building datasets for
+toxicity detection, strengthening my experience in working with varied data types and supporting impactful
+applications.
+What draws me to KoRo is your innovative approach to food retail and your commitment to transparency,
+simplicity, and quality. I’m particularly inspired by the opportunity to work with a diverse team and help optimize
+decision-making processes through clear, actionable insights—whether that’s through dashboards, data pipelines,
+or ad-hoc analysis. KoRo’s mission resonates strongly with my own values of sustainability, efficiency, and
+continuous learning.
+I’m currently based in Dresden and would be happy to join the Berlin office regularly. I am excited about
+contributing my analytical skills and technical curiosity to KoRo’s data team, while growing with a company that’s
+changing how people engage with food.
+Thank you for considering my application. I look forward to the opportunity to support KoRo’s growth with data
+that makes a difference.
+Warm regards,
+Vrushali

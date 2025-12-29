@@ -1,0 +1,9 @@
+pymupdf
+pytesseract
+python-dotenv
+sentence-transformers
+chroma-hnswlib
+chromadb
+numpy
+streamlit
+jinja2
