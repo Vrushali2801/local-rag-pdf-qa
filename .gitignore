@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtual environment
+.venv/
+
+# Data files
+data/raw/
+data/processed/
+data/chunks/
+
+# Vector DB
+vectorstore/
+
+# OS / editor
+.env
+.vscode/
