@@ -3,9 +3,7 @@ import fitz  # PyMuPDF
 import pytesseract
 from PIL import Image
 import numpy as np
-
-RAW_DIR = "data/raw"
-PROCESSED_DIR = "data/processed"
+from config import RAW_DIR, PROCESSED_DIR, OCR_DPI
 
 
 def is_scanned_page(page):
@@ -16,7 +14,7 @@ def is_scanned_page(page):
 
 def ocr_page(page):
     # Convert the page to an image for OCR.
-    pix = page.get_pixmap(dpi=200)
+    pix = page.get_pixmap(dpi=OCR_DPI)
     img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
     text = pytesseract.image_to_string(img)
     return text

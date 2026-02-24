@@ -1,24 +1,36 @@
 import os
-
-PROCESSED_DIR = "data/processed"
-CHUNK_DIR = "data/chunks"
-
-CHUNK_SIZE = 500       # characters per chunk
-CHUNK_OVERLAP = 100    # characters overlap to preserve context
+from config import PROCESSED_DIR, CHUNK_DIR, CHUNK_SIZE, CHUNK_OVERLAP
 
 
 def chunk_text(text, chunk_size=CHUNK_SIZE, overlap=CHUNK_OVERLAP):
+    """Chunk text with sentence-aware boundaries for better context."""
     chunks = []
-    start = 0
-    text_length = len(text)
-
-    while start < text_length:
-        end = start + chunk_size
-        chunk = text[start:end]
-
-        chunks.append(chunk.strip())
-        start += chunk_size - overlap
-
+    
+    # Split into sentences (simple approach)
+    sentences = text.replace('! ', '!|').replace('? ', '?|').replace('. ', '.|').split('|')
+    
+    current_chunk = ""
+    
+    for sentence in sentences:
+        sentence = sentence.strip()
+        if not sentence:
+            continue
+            
+        # If adding this sentence exceeds chunk size and we have content, save chunk
+        if len(current_chunk) + len(sentence) > chunk_size and current_chunk:
+            chunks.append(current_chunk.strip())
+            # Start new chunk with overlap (last ~overlap chars)
+            if len(current_chunk) > overlap:
+                current_chunk = current_chunk[-overlap:] + " " + sentence
+            else:
+                current_chunk = sentence
+        else:
+            current_chunk += (" " if current_chunk else "") + sentence
+    
+    # Add the last chunk
+    if current_chunk.strip():
+        chunks.append(current_chunk.strip())
+    
     return chunks
 
 

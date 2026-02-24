@@ -1,87 +1,125 @@
 import streamlit as st
-st.write("DEBUG: UI file is running")
 import os
 import sys
 
 # add project root to Python path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-st.write("Testing imports...")
+from ingestion.extract_text import extract_text_from_pdf
+from chunking.chunk_text import chunk_text
+from embeddings.embed_chunks import embed_and_store
+from retrieval.hybrid_search import retrieve_context
+from llm.generate_answer import generate_answer
+from config import RAW_DIR, PROCESSED_DIR, CHUNK_DIR, DEFAULT_MODEL
 
-try:
-    from ingestion.extract_text import extract_text_from_pdf
-    st.write("import 1 OK")
-except Exception as e:
-    st.write("import 1 FAILED:", e)
-
-try:
-    from chunking.chunk_text import chunk_text
-    st.write("import 2 OK")
-except Exception as e:
-    st.write("import 2 FAILED:", e)
-
-try:
-    from embeddings.embed_chunks import embed_and_store
-    st.write("import 3 OK")
-except Exception as e:
-    st.write("import 3 FAILED:", e)
-
-try:
-    from retrieval.hybrid_search import retrieve_context
-    st.write("import 4 OK")
-except Exception as e:
-    st.write("import 4 FAILED:", e)
-
-try:
-    from llm.generate_answer import generate_answer
-    st.write("import 5 OK")
-except Exception as e:
-    st.write("import 5 FAILED:", e)
-
-
-
-UPLOAD_DIR = "data/raw"
-PROCESSED_DIR = "data/processed"
+UPLOAD_DIR = RAW_DIR
 
 
 # --- Helper functions ---------------------------------------------------------
 
 def process_pdf(uploaded_file):
-    raw_path = os.path.join(UPLOAD_DIR, uploaded_file.name)
-    with open(raw_path, "wb") as f:
-        f.write(uploaded_file.getbuffer())
+    """Process uploaded PDF: extract text, chunk, and re-index."""
+    try:
+        raw_path = os.path.join(UPLOAD_DIR, uploaded_file.name)
+        with open(raw_path, "wb") as f:
+            f.write(uploaded_file.getbuffer())
 
-    # Extract text
-    text = extract_text_from_pdf(raw_path)
+        # Extract text
+        st.write("📄 Extracting text from PDF...")
+        text = extract_text_from_pdf(raw_path)
 
-    processed_path = os.path.join(PROCESSED_DIR, uploaded_file.name.replace(".pdf", ".txt"))
-    with open(processed_path, "w", encoding="utf-8") as f:
-        f.write(text)
+        processed_path = os.path.join(PROCESSED_DIR, uploaded_file.name.replace(".pdf", ".txt"))
+        with open(processed_path, "w", encoding="utf-8") as f:
+            f.write(text)
 
-    # Chunk
-    chunk_text(processed_path)
+        # Chunk text and save
+        st.write("✂️ Chunking text...")
+        chunks = chunk_text(text)
+        chunk_filename = uploaded_file.name.replace(".pdf", "_chunks.txt")
+        chunk_path = os.path.join(CHUNK_DIR, chunk_filename)
+        
+        with open(chunk_path, "w", encoding="utf-8") as f:
+            for i, c in enumerate(chunks):
+                f.write(f"--- chunk {i} ---\n")
+                f.write(c + "\n\n")
 
-    # Re-embed into FAISS
-    embed_and_store()
+        # Re-embed into FAISS
+        st.write("🔢 Generating embeddings (this may take 30-60 seconds)...")
+        embed_and_store()
+        
+        return True
+    except Exception as e:
+        st.error(f"Failed to process PDF: {str(e)}")
+        import traceback
+        st.code(traceback.format_exc())
+        return False
 
 
 # --- UI Starts Here -----------------------------------------------------------
 
 st.set_page_config(page_title="Local RAG App", layout="wide")
 
-st.title("📄 Local CPU RAG System")
+st.title("📄 Local RAG System")
 st.write("Upload your PDFs and ask questions using your local LLM.")
+
+# Initialize session state
+if 'last_uploaded' not in st.session_state:
+    st.session_state.last_uploaded = None
+if 'processing_complete' not in st.session_state:
+    st.session_state.processing_complete = False
 
 # --- PDF Upload Section --------------------------------------------------------
 
 st.header("Upload Documents")
 
-uploaded_file = st.file_uploader("Upload a PDF file", type=["pdf"])
+st.info("💡 **Tip:** All uploaded PDFs are indexed together. Use 'Clear All' to start fresh with a single document.")
 
-if uploaded_file:
+# Show currently indexed documents
+if os.path.exists(CHUNK_DIR):
+    chunk_files = [f for f in os.listdir(CHUNK_DIR) if f.endswith("_chunks.txt")]
+    if chunk_files:
+        with st.expander(f"📚 Currently Indexed Documents ({len(chunk_files)})"):
+            for f in chunk_files:
+                st.write(f"• {f.replace('_chunks.txt', '')}")
+
+# Option to clear all documents
+col1, col2 = st.columns([3, 1])
+with col2:
+    if st.button("🗑️ Clear All", help="Remove all indexed documents"):
+        # Clear chunks
+        if os.path.exists(CHUNK_DIR):
+            for f in os.listdir(CHUNK_DIR):
+                if f.endswith("_chunks.txt") or f.endswith(".jsonl") or f == "chunks.txt":
+                    os.remove(os.path.join(CHUNK_DIR, f))
+        # Clear vector store
+        from config import FAISS_INDEX_PATH, FAISS_META_PATH
+        if os.path.exists(FAISS_INDEX_PATH):
+            os.remove(FAISS_INDEX_PATH)
+        if os.path.exists(FAISS_META_PATH):
+            os.remove(FAISS_META_PATH)
+        # Reset session state
+        st.session_state.last_uploaded = None
+        st.session_state.processing_complete = False
+        st.success("✅ All documents cleared!")
+        st.info("Upload a new PDF to get started.")
+
+with col1:
+    uploaded_file = st.file_uploader("Upload a PDF file", type=["pdf"], key="pdf_uploader")
+
+# Only process if file is new
+if uploaded_file and uploaded_file.name != st.session_state.last_uploaded:
     with st.spinner("Processing PDF..."):
-        process_pdf(uploaded_file)
-    st.success("Document processed and indexed!")
+        success = process_pdf(uploaded_file)
+    if success:
+        st.session_state.last_uploaded = uploaded_file.name
+        st.session_state.processing_complete = True
+        st.success("✅ Document processed and indexed!")
+        st.info("👇 Scroll down to ask questions!")
+    else:
+        st.session_state.last_uploaded = None
+        st.session_state.processing_complete = False
+elif uploaded_file and uploaded_file.name == st.session_state.last_uploaded:
+    st.info(f"✅ Document '{uploaded_file.name}' is already indexed. You can ask questions below!")
 
 st.divider()
 
@@ -95,18 +133,24 @@ if st.button("Search"):
     if not query.strip():
         st.warning("Please type a question.")
     else:
-        with st.spinner("Retrieving context..."):
-            ret = retrieve_context(query)
-        
-        st.subheader("Retrieved Context")
-        st.write(ret["context"])
+        try:
+            with st.spinner("Retrieving context..."):
+                ret = retrieve_context(query)
+            
+            st.subheader("Retrieved Context")
+            st.write(ret["context"])
 
-        with st.spinner("Generating answer using Ollama..."):
-            answer = generate_answer(ret["context"], query, model="phi3")
+            with st.spinner("Generating answer using Ollama..."):
+                answer = generate_answer(ret["context"], query, model=DEFAULT_MODEL)
 
-        st.subheader("Answer")
-        st.write(answer)
+            st.subheader("Answer")
+            st.write(answer)
 
-        st.subheader("Sources")
-        for sid, _ in ret["sources"]:
-            st.write(f"- {sid}")
+            st.subheader("Sources")
+            for sid, _ in ret["sources"]:
+                st.write(f"- {sid}")
+        except FileNotFoundError:
+            st.error("⚠️ No documents indexed yet. Please upload a PDF first.")
+        except Exception as e:
+            st.error(f"⚠️ Error: {str(e)}")
+            st.info("Make sure Ollama is running: `ollama serve`")

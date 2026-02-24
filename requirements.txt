@@ -1,9 +1,24 @@
+# PDF Processing
 pymupdf
 pytesseract
+Pillow
+
+# Environment & Configuration
 python-dotenv
+
+# Embeddings & Vector Store
 sentence-transformers
-chroma-hnswlib
-chromadb
+faiss-cpu
 numpy
-streamlit
+
+# LLM Integration
+requests
 jinja2
+
+# UI
+streamlit
+
+# Optional: OpenSearch (if using)
+# opensearch-py
+
+# Note: ChromaDB dependencies removed (project uses FAISS)

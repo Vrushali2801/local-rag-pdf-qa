@@ -3,21 +3,31 @@ import pickle
 import faiss
 from sentence_transformers import SentenceTransformer
 import os
+from config import FAISS_INDEX_PATH, FAISS_META_PATH, EMBEDDING_MODEL, TOP_K_RESULTS
 
-DB_INDEX = "vectorstore/faiss.index"
-DB_META = "vectorstore/faiss_meta.pkl"
+DB_INDEX = FAISS_INDEX_PATH
+DB_META = FAISS_META_PATH
 
-model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+model = SentenceTransformer(EMBEDDING_MODEL)
 
 
 def load_faiss_db():
-    index = faiss.read_index(DB_INDEX)
-    with open(DB_META, "rb") as f:
-        meta = pickle.load(f)
-    return index, meta
+    """Load FAISS index and metadata."""
+    if not os.path.exists(DB_INDEX) or not os.path.exists(DB_META):
+        raise FileNotFoundError(
+            "FAISS index not found. Please run embeddings/embed_chunks.py first."
+        )
+    
+    try:
+        index = faiss.read_index(DB_INDEX)
+        with open(DB_META, "rb") as f:
+            meta = pickle.load(f)
+        return index, meta
+    except Exception as e:
+        raise RuntimeError(f"Failed to load FAISS database: {str(e)}")
 
 
-def semantic_search(query, k=3):
+def semantic_search(query, k=TOP_K_RESULTS):
     index, meta = load_faiss_db()
 
     query_vec = model.encode([query], convert_to_numpy=True)
@@ -32,8 +42,10 @@ def semantic_search(query, k=3):
 
     return results
 
-def retrieve_context(query, k=3):
+def retrieve_context(query, k=TOP_K_RESULTS):
+    """Retrieve relevant context for a query."""
     matches = semantic_search(query, k)
+    # Join all chunks without truncation for better context
     context = "\n\n".join(text for _, text in matches)
     return {
         "context": context,

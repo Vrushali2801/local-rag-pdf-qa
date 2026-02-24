@@ -3,10 +3,10 @@ import numpy as np
 import pickle
 from sentence_transformers import SentenceTransformer
 import faiss
+from config import CHUNK_DIR, FAISS_INDEX_PATH, FAISS_META_PATH, EMBEDDING_MODEL
 
-CHUNK_DIR = "data/chunks"
-DB_INDEX = "vectorstore/faiss.index"
-DB_META = "vectorstore/faiss_meta.pkl"
+DB_INDEX = FAISS_INDEX_PATH
+DB_META = FAISS_META_PATH
 
 
 def load_chunks():
@@ -35,7 +35,7 @@ def embed_and_store():
         os.remove(DB_META)
 
     print("Loading model...")
-    model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+    model = SentenceTransformer(EMBEDDING_MODEL)
 
     print("Loading chunks...")
     ids, texts = load_chunks()
